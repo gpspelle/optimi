@@ -7,41 +7,45 @@ T=readtable('PositionsBoxes.txt');   PositionsBoxes=T.x+1i*T.y;
 %% Plot example with object i in the box i (1 in 1, 2 in 2, etc.)
 n = length (PositionsObjets);   % number of objects 
 
-l_boxes = length(PositionsBoxes);
-l_objets = length(PositionsObjets);
-
-dist_mat = zeros(l_boxes, l_objets);
-for i=1:l_boxes
-    for j=1:l_objets
-        dist_mat(i,j) = norm(PositionsBoxes(i) - PositionsObjets(j));
+dist = zeros(n, n); % matrix of distances
+for i=1:n
+    for j=1:n
+        dist(i,j) = norm(PositionsBoxes(i) - PositionsObjets(j));
     end
 end
 
-dist_vec = reshape(dist_mat.',1,[]);
-size_vec = length(dist_vec);
-Aeq = zeros(size_vec, 1);
-beq = zeros(1);
-Aineq = zeros(size_vec, 1);
+% unravelling a matrix to a vector
+dist = reshape(dist.',1,[]);
+
+% number of elements of the vector
+size = length(dist);
+
+% create the ineq constraints
+Aineq = zeros(size, 1);
 bineq = zeros(1);
 
+% create the eq constraints
+Aeq = zeros(size, 1);
+beq = zeros(1);
 
+% only one value in each row
 i = 0;
-while i < size_vec
-    row = zeros(size_vec, 1);
-    for j= 1:l_objets
+while i < size
+    row = zeros(size, 1);
+    for j= 1:n
         row(i+j) = 1;
     end
-    %fprintf("%d\n", i);
     Aeq = [Aeq, row];
     beq = [beq; 1];
-    i = i + l_objets;
+    i = i + n;
 end
 
+% only one value in each line
 i = 1;
-while i <= l_boxes
-    row = zeros(size_vec, 1);
-    for j= 0:l_boxes-1
-        row(i + l_boxes * j) = 1;
+while i <= n
+    row = zeros(size, 1);
+    for j= 0:n-1
+        row(i + n * j) = 1;
     end
     Aeq = [Aeq, row];
     beq = [beq; 1];
@@ -49,133 +53,150 @@ while i <= l_boxes
 end
 
 % object 1 can't be in the last box
-row = zeros(size_vec, 1);
-ind = to_ravel(l_boxes, 1, l_objets);
+row = zeros(size, 1);
+ind = to_ravel(n, 1, n);
 row(ind) = 1;
-
 Aeq = [Aeq, row];
 beq = [beq; 0];
 
 % object 2 can't be on the first box 
-row = zeros(size_vec, 1);
-ind = to_ravel(1, 2, l_objets);
+row = zeros(size, 1);
+ind = to_ravel(1, 2, n);
 row(ind) = 1;
 Aeq = [Aeq, row];
 beq = [beq; 0];
 
 % object 1 is on the left of the object 2
-for i = 1:l_boxes - 1   
-   row = zeros(size_vec, 1);
-   ind = to_ravel(i, 1, l_objets);
+for i = 1:n - 1   
+   row = zeros(size, 1);
+   ind = to_ravel(i, 1, n);
    row(ind) = 1;
-   ind = to_ravel(i+1, 2 , l_objets);
+   ind = to_ravel(i+1, 2 , n);
    row(ind) = -1;
    
    Aeq = [Aeq, row];
    beq = [beq; 0];
 end
 
-% % object 4 isn't on the right of the object 3
-% for l = l_boxes : -1 : 2
-%     row = zeros(size_vec, 1);
-%     ind = to_ravel(l, 3, l_objets);
-%     row(ind) = 1;
-%     for k = l-1: -1 : 1
-%         ind = to_ravel(k, 4, l_objets);
-%         row(ind) = -1;
-%     end
-%    
-%     Aeq = [Aeq, row];
-%     beq = [beq; 0];
-% end
+% % the code below doesn't work, at least, it doesn't give an optimal result
+% % % object 4 isn't on the right of the object 3
+% % for l = n : -1 : 2
+% %     row = zeros(size, 1);
+% %     ind = to_ravel(l, 3, n);
+% %     row(ind) = 1;
+% %     for k = l-1: -1 : 1
+% %         ind = to_ravel(k, 4, n);
+% %         row(ind) = -1;
+% %     end
+% %    
+% %     Aeq = [Aeq, row];
+% %     beq = [beq; 0];
+% % end
 
-for i = 2:l_boxes-1
-    row = zeros(size_vec, 1);
-    ind = to_ravel(i, 3, l_objets);
+for i = 2:n-1
+    row = zeros(size, 1);
+    ind = to_ravel(i, 3, n);
     row(ind) = 1;
-    for k = 1: l_boxes
-        ind = to_ravel(i+k, 4, l_objets);
-        if ind < size_vec
-            row(ind) = 1;    
-        end
+    for k = i+1: n-1
+        ind = to_ravel(k, 4, n);
+        row(ind) = 1;    
     end
     
     Aineq = [Aineq, row];
     bineq = [bineq; 1];
 end
+
 % object 3 can't be on the first box 
-row = zeros(size_vec, 1);
-ind = to_ravel(1, 3, l_objets);
+row = zeros(size, 1);
+ind = to_ravel(1, 3, n);
 row(ind) = 1;
 Aeq = [Aeq, row];
 beq = [beq; 0];
 
 % object 4 can't be on the last box 
-row = zeros(size_vec, 1);
-ind = to_ravel(l_objets, 4, l_objets);
+row = zeros(size, 1);
+ind = to_ravel(n, 4, n);
 row(ind) = 1;
 Aeq = [Aeq, row];
 beq = [beq; 0];
 
 % if object 9 is in the first box object 7 is in the second box
-rows = zeros(size_vec, 1);
-ind = to_ravel(1, 9, l_objets);
+rows = zeros(size, 1);
+ind = to_ravel(1, 9, n);
 row(ind) = 1;
-ind = to_ravel(2, 7, l_objets);
+ind = to_ravel(2, 7, n);
 row(ind) = -1;
-
-Aeq = [Aeq, row];
-beq = [beq; 0];
+Aineq = [Aineq, row];
+bineq = [bineq; 0];
 
 % if object 9 is in the last box then object 7 is in the penultimate box
-rows = zeros(size_vec, 1);
-ind = to_ravel(l_objets, 9, l_objets);
+rows = zeros(size, 1);
+ind = to_ravel(n, 9, n);
 row(ind) = 1;
-ind = to_ravel(l_objets-1, 7, l_objets);
+ind = to_ravel(n-1, 7, n);
 row(ind) = -1;
-
-Aeq = [Aeq, row];
-beq = [beq; 0];
+Aineq = [Aineq, row];
+bineq = [bineq; 0];
 
 % boxe containing 7 must be close to boxe containing 9 for i = 2,...,n-1
-for i = 2:l_objets - 1
-    rows = zeros(size_vec, 1);
-    ind = to_ravel(i, 9, l_objets);
+for i = 2:n - 1
+    rows = zeros(size, 1);
+    ind = to_ravel(i, 7, n);
     row(ind) = 1;
-    ind = to_ravel(i-1, 7, l_objets);
+    ind = to_ravel(i-1, 9, n);
     row(ind) = -1;
-    ind = to_ravel(i+1, 7, l_objets);
+    ind = to_ravel(i+1, 9, n);
     row(ind) = -1;
 
-    Aeq = [Aeq, row];
-    beq = [beq; 0];
+    Aineq = [Aineq, row];
+    bineq = [bineq; 0];
  
 end
 
-%Aeq(1, :) =[];
+
+% remove the first line, we don't need them, it was created to allocate
+% space in the begin
 Aeq(:, 1) = [];
 beq = beq(2:end);
 
 Aineq(:, 1) = [];
 bineq = bineq(2:end);
 
+% transpose the matrix
 Aineq = Aineq';
 Aeq = Aeq';
 
-intcon = 1:size_vec;
+% all variables are integers
+intcon = 1:size;
 intcon = intcon(:);
 
-x = intlinprog(dist_vec, intcon, Aineq, bineq, Aeq, beq, zeros(size_vec, 1), ones(size_vec, 1));
 
-x = reshape(x, l_objets, l_boxes);
+%options = optimoptions('intlinprog', 'AbsoluteGapTolerance', 0, 'CutGeneration', 'none', 'IntegerTolerance', 1e-6, 'CutMaxIterations', 50, 'Display', 'final', 'ConstraintTolerance', 1e-9);
+%options = options + optimoptions('intlinprog', 'CutGeneration', 'none');
+% solve the problem
+x = intlinprog(dist, intcon, Aineq, bineq, Aeq, beq, zeros(size, 1), ones(size, 1));
 
-ans_vec = zeros(l_boxes, 1);
-for i = 1:l_boxes
+% ravel the answer (vector -> matrix)
+x = reshape(x, n, n);
+
+x = round(x);
+
+% get the indexes that are 1
+ans_vec = zeros(n, 1);
+for i = 1:n
     ans_vec(i) = find(x(i, :));
 end
+
+D = 0;
+
+for j = 1:n
+    D = D + abs(PositionsObjets(j) - PositionsBoxes(ans_vec(j)));
+end
+
+
+% transpose and plot
 ans_vec'
 PlotSolution (ans_vec, PositionsObjets, PositionsBoxes)
-
 
 function x = to_ravel(i, j, l)
     x = (i-1) * l + j;

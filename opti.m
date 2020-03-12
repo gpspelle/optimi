@@ -78,21 +78,7 @@ for i = 1:n - 1
    beq = [beq; 0];
 end
 
-% % the code below doesn't work, at least, it doesn't give an optimal result
-% % % object 4 isn't on the right of the object 3
-% % for l = n : -1 : 2
-% %     row = zeros(size, 1);
-% %     ind = to_ravel(l, 3, n);
-% %     row(ind) = 1;
-% %     for k = l-1: -1 : 1
-% %         ind = to_ravel(k, 4, n);
-% %         row(ind) = -1;
-% %     end
-% %    
-% %     Aeq = [Aeq, row];
-% %     beq = [beq; 0];
-% % end
-
+%  object 4 isn't on the right of the object 3
 for i = 2:n-1
     row = zeros(size, 1);
     ind = to_ravel(i, 3, n);
@@ -129,6 +115,15 @@ row(ind) = -1;
 Aineq = [Aineq, row];
 bineq = [bineq; 0];
 
+% if object 9 is in the second box object 7 is in the first box
+rows = zeros(size, 1);
+ind = to_ravel(2, 9, n);
+row(ind) = 1;
+ind = to_ravel(1, 7, n);
+row(ind) = -1;
+Aineq = [Aineq, row];
+bineq = [bineq; 0];
+
 % if object 9 is in the last box then object 7 is in the penultimate box
 rows = zeros(size, 1);
 ind = to_ravel(n, 9, n);
@@ -138,14 +133,23 @@ row(ind) = -1;
 Aineq = [Aineq, row];
 bineq = [bineq; 0];
 
+% if object 9 is in the penultimate box then object 7 is in the last box
+rows = zeros(size, 1);
+ind = to_ravel(n, 7, n);
+row(ind) = 1;
+ind = to_ravel(n-1, 9, n);
+row(ind) = -1;
+Aineq = [Aineq, row];
+bineq = [bineq; 14];
+
 % boxe containing 7 must be close to boxe containing 9 for i = 2,...,n-1
 for i = 2:n - 1
-    rows = zeros(size, 1);
-    ind = to_ravel(i, 7, n);
+    row = zeros(size, 1);
+    ind = to_ravel(i, 9, n);
     row(ind) = 1;
-    ind = to_ravel(i-1, 9, n);
+    ind = to_ravel(i-1, 7, n);
     row(ind) = -1;
-    ind = to_ravel(i+1, 9, n);
+    ind = to_ravel(i+1, 7, n);
     row(ind) = -1;
 
     Aineq = [Aineq, row];
@@ -153,6 +157,25 @@ for i = 2:n - 1
  
 end
 
+% block the last solution we found
+rows = zeros(size, 1);
+row(to_ravel(1, 12, n)) = 1;
+row(to_ravel(2, 13, n)) = 1;
+row(to_ravel(3, 10, n)) = 1;
+row(to_ravel(4, 9, n)) = 1;
+row(to_ravel(5, 8, n)) = 1;
+row(to_ravel(6, 7, n)) = 1;
+row(to_ravel(7, 5, n)) = 1;
+row(to_ravel(8, 14, n)) = 1;
+row(to_ravel(9, 6, n)) = 1;
+row(to_ravel(10, 11, n)) = 1;
+row(to_ravel(11, 1, n)) = 1;
+row(to_ravel(12, 2, n)) = 1;
+row(to_ravel(13, 3, n)) = 1;
+row(to_ravel(14, 4, n)) = 1;
+row(to_ravel(15, 15, n)) = 1;
+Aineq = [Aineq, row];
+bineq = [bineq; n-1];
 
 % remove the first line, we don't need them, it was created to allocate
 % space in the begin
@@ -193,6 +216,7 @@ for j = 1:n
     D = D + abs(PositionsObjets(j) - PositionsBoxes(ans_vec(j)));
 end
 
+D
 
 % transpose and plot
 ans_vec'
